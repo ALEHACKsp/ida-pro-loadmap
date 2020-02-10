@@ -29,9 +29,6 @@
 #include  "MAPReader.h"
 #include "stdafx.h"
 
-//#define USE_STANDARD_FILE_FUNCTIONS
-//#define USE_DANGEROUS_FUNCTIONS
-
 // IDA SDK Header Files
 #include <ida.hpp>
 #include <idp.hpp>
@@ -40,7 +37,6 @@
 #include <diskio.hpp>
 #include <bytes.hpp>
 #include <name.hpp>
-#include <entry.hpp>
 #include <fpro.h>
 #include <prodir.h> // just for MAXPATH
 
@@ -56,7 +52,16 @@ const size_t g_minLineLen = 14; // For a "xxxx:xxxxxxxx " line
 static char g_szIniPath[MAXPATH] = { 0 };
 
 /// @brief Global variable for options of plugin
-static PLUGIN_OPTIONS g_options = { 0 };
+static PLUGIN_OPTIONS g_options =
+{
+    true, // bNameApply
+    false, // bReplace
+#ifdef _DEBUG
+    true // bVerbose
+#else
+    false // bVerbose
+#endif
+};
 
 static const cfgopt_t g_optsinfo[] =
 {
