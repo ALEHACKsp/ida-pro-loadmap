@@ -30,6 +30,7 @@ namespace MapFile {
 /// @{
 const char MSVC_HDR_START[]        = "Address         Publics by Value              Rva+Base     Lib:Object";
 const char MSVC_HDR_START2[]       = "Address         Publics by Value              Rva+Base       Lib:Object";
+const char MSVC_HDR_START3[]       = "Address         Publics by Value              Rva+Base               Lib:Object"; // Matti: x64
 const char BCCL_HDR_NAME_START[]   = "Address         Publics by Name";
 const char BCCL_HDR_VALUE_START[]  = "Address         Publics by Value";
 const char WATCOM_MEMMAP_START[]   = "Address        Symbol";
@@ -188,7 +189,9 @@ const char * MapFile::findEOL(const char * pStart, const char * pEnd)
 ////////////////////////////////////////////////////////////////////////////////
 MapFile::SectionType MapFile::recognizeSectionStart(const char *pLine, size_t lineLen)
 {
-    if (strncasecmp(pLine, MSVC_HDR_START, lineLen) == 0 || strncasecmp(pLine, MSVC_HDR_START2, lineLen) == 0)
+    if (strncasecmp(pLine, MSVC_HDR_START, lineLen) == 0 ||
+        (strncasecmp(pLine, MSVC_HDR_START2, lineLen) == 0 ||
+        strncasecmp(pLine, MSVC_HDR_START3, lineLen) == 0))
         return MapFile::MSVC_MAP;
     if (strncasecmp(pLine, BCCL_HDR_NAME_START, lineLen) == 0)
         return MapFile::BCCL_NAM_MAP;
@@ -256,17 +259,21 @@ MapFile::ParseResult MapFile::parseMsSymbolLine(MapFile::MAPSymbol &sym, const c
     if (lineCut > MAXNAMELEN + minLineLen)
         lineCut = MAXNAMELEN + minLineLen;
     char * dupLine = (char *)std::malloc(lineCut+1);
-    strncpy(dupLine,pLine,lineCut);
+    qstrncpy(dupLine,pLine,lineCut);
     dupLine[lineCut] = '\0';
     if (strncasecmp(dupLine, ";", 1) == 0)
     {
-        strncpy(sym.name,dupLine+1,MAXNAMELEN-1);
+        qstrncpy(sym.name,dupLine+1,MAXNAMELEN-1);
         sym.name[MAXNAMELEN] = '\0';
         std::free(dupLine);
         return MapFile::COMMENT_LINE;
     }
     sym.addr = -1;
+#ifdef __EA64__
+    int ret = sscanf(dupLine, " %04X : %016llX %[^\t\n ;]", (unsigned long*)&sym.seg, &sym.addr, sym.name);
+#else
     int ret = sscanf(dupLine, " %04X : %08X %[^\t\n ;]", &sym.seg, &sym.addr, sym.name);
+#endif
     std::free(dupLine);
     if (3 != ret)
     {
@@ -302,11 +309,11 @@ MapFile::ParseResult MapFile::parseWatcomSymbolLine(MapFile::MAPSymbol &sym, con
     if (lineCut > MAXNAMELEN + minLineLen)
         lineCut = MAXNAMELEN + minLineLen;
     char * dupLine = (char *)std::malloc(lineCut+1);
-    strncpy(dupLine,pLine,lineCut);
+    qstrncpy(dupLine,pLine,lineCut);
     dupLine[lineCut] = '\0';
     if (strncasecmp(dupLine, ";", 1) == 0)
     {
-        strncpy(sym.name,dupLine+1,MAXNAMELEN-1);
+        qstrncpy(sym.name,dupLine+1,MAXNAMELEN-1);
         sym.name[MAXNAMELEN] = '\0';
         std::free(dupLine);
         return MapFile::COMMENT_LINE;
@@ -318,12 +325,16 @@ MapFile::ParseResult MapFile::parseWatcomSymbolLine(MapFile::MAPSymbol &sym, con
     }
     if (strncasecmp(dupLine, WATCOM_MEMMAP_COMMENT, std::strlen(WATCOM_MEMMAP_COMMENT)) == 0)
     {
-        strncpy(sym.name,dupLine+std::strlen(WATCOM_MEMMAP_COMMENT),MAXNAMELEN-1);
+        qstrncpy(sym.name,dupLine+std::strlen(WATCOM_MEMMAP_COMMENT),MAXNAMELEN-1);
         sym.name[MAXNAMELEN] = '\0';
         std::free(dupLine);
         return MapFile::COMMENT_LINE;
     }
+#ifdef __EA64__
+    int ret = sscanf(dupLine, " %04X : %016X%*c %[^\t\n;]", &sym.seg, &sym.addr, sym.name);
+#else
     int ret = sscanf(dupLine, " %04X : %08X%*c %[^\t\n;]", &sym.seg, &sym.addr, sym.name);
+#endif
     std::free(dupLine);
     if (3 != ret)
     {
@@ -359,11 +370,11 @@ MapFile::ParseResult MapFile::parseGccSymbolLine(MapFile::MAPSymbol &sym, const 
     if (lineCut > MAXNAMELEN + minLineLen)
         lineCut = MAXNAMELEN + minLineLen;
     char * dupLine = (char *)std::malloc(lineCut+1);
-    strncpy(dupLine,pLine,lineCut);
+    qstrncpy(dupLine,pLine,lineCut);
     dupLine[lineCut] = '\0';
     if (strncasecmp(dupLine, ";", 1) == 0)
     {
-        strncpy(sym.name,dupLine+1,MAXNAMELEN-1);
+        qstrncpy(sym.name,dupLine+1,MAXNAMELEN-1);
         sym.name[MAXNAMELEN] = '\0';
         std::free(dupLine);
         return MapFile::COMMENT_LINE;
@@ -382,13 +393,17 @@ MapFile::ParseResult MapFile::parseGccSymbolLine(MapFile::MAPSymbol &sym, const 
     }
     if (strncasecmp(dupLine, GCC_MEMMAP_LOAD, std::strlen(GCC_MEMMAP_LOAD)) == 0)
     {
-        strncpy(sym.name,dupLine,MAXNAMELEN-1);
+        qstrncpy(sym.name,dupLine,MAXNAMELEN-1);
         sym.name[MAXNAMELEN] = '\0';
         std::free(dupLine);
         return MapFile::COMMENT_LINE;
     }
-    unsigned long linear_addr;
+    ea_t linear_addr;
+#ifdef __EA64__
+    int ret = sscanf(dupLine, " 0x%016X%*c %[^\t\n;]", &linear_addr, sym.name);
+#else
     int ret = sscanf(dupLine, " 0x%08X%*c %[^\t\n;]", &linear_addr, sym.name);
+#endif
     std::free(dupLine);
     if (2 != ret)
     {

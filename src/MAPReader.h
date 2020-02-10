@@ -17,6 +17,7 @@
 #define MAPREADER_H_
 
 #include  <cstdio>
+#include <fpro.h>
 
 #define MAXNAMELEN      512
 #define INVALID_MAPFILE_SIZE	(0xffffffff)
@@ -48,8 +49,8 @@ typedef enum {
 } ParseResult;
 
 typedef struct {
-    unsigned long seg;
-    unsigned long addr;
+    ea_t seg;
+    ea_t addr;
     char name[MAXNAMELEN + 1];
 } MAPSymbol;
 
@@ -66,6 +67,6 @@ MapFile::ParseResult parseGccSymbolLine(MapFile::MAPSymbol &sym, const char *pLi
 };
 
 // Converts address in linear form into seg:offs, using IDA sections list
-void linearAddressToSymbolAddr(MapFile::MAPSymbol &sym, unsigned long linear_addr);
+void linearAddressToSymbolAddr(MapFile::MAPSymbol &sym, ea_t linear_addr);
 
 #endif

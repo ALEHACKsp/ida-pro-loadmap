@@ -72,7 +72,7 @@ static char g_szLoadMapSection[] = "LoadMap";
 static char g_szOptionsKey[] = "Options";
 /// @}
 
-void linearAddressToSymbolAddr(MapFile::MAPSymbol &sym, unsigned long linear_addr)
+void linearAddressToSymbolAddr(MapFile::MAPSymbol &sym, ea_t linear_addr)
 {
     sym.seg = get_segm_num(linear_addr);
     segment_t * sseg = getnseg((int) sym.seg);
@@ -361,7 +361,7 @@ bool idaapi run(size_t)
                 bNameApply = false;
             }
 
-            unsigned long la = sym.addr + getnseg((int) sym.seg)->start_ea;
+            ea_t la = sym.addr + getnseg((int) sym.seg)->start_ea;
             flags_t f = get_full_flags(la);
 
             if (bNameApply) // Apply symbols for name
@@ -437,7 +437,7 @@ bool idaapi run(size_t)
 ////////////////////////////////////////////////////////////////////////////////
 void idaapi term(void)
 {
-    msg("LoadMap: Plugin v%s terminate.\n",PLUG_VERSION);
+    msg("LoadMap: Plugin v%s terminate.\n", PLUG_VERSION);
 
     // Write the plugin's options to cfg file
     /*_VERIFY(WritePrivateProfileStruct(g_szLoadMapSection, g_szOptionsKey, &g_options,
@@ -453,7 +453,7 @@ void idaapi term(void)
 char wanted_name[]   = "Load Symbols From MAP File";
 char wanted_hotkey[] = "Ctrl-M";
 char comment[]       = "LoadMap loads symbols from a VC/BC/Watcom/Dede map file.";
-char help[]          = "LoadMap "PLUG_VERSION", Visual C/Borland C/Watcom C/Dede map file import plugin."
+char help[]          = "LoadMap " PLUG_VERSION ", Visual C/Borland C/Watcom C/Dede map file import plugin."
                               "This module reads selected map file, and loads symbols\n"
                               "into IDA database. Click it while holding Shift to see options.";
 /// @}
