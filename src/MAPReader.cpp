@@ -331,7 +331,7 @@ MapFile::ParseResult MapFile::parseWatcomSymbolLine(MapFile::MAPSymbol &sym, con
         return MapFile::COMMENT_LINE;
     }
 #ifdef __EA64__
-    int ret = sscanf(dupLine, " %04X : %016X%*c %[^\t\n;]", &sym.seg, &sym.addr, sym.name);
+    int ret = sscanf(dupLine, " %04X : %016llX%*c %[^\t\n;]", &sym.seg, &sym.addr, sym.name);
 #else
     int ret = sscanf(dupLine, " %04X : %08X%*c %[^\t\n;]", &sym.seg, &sym.addr, sym.name);
 #endif
@@ -400,7 +400,7 @@ MapFile::ParseResult MapFile::parseGccSymbolLine(MapFile::MAPSymbol &sym, const 
     }
     ea_t linear_addr;
 #ifdef __EA64__
-    int ret = sscanf(dupLine, " 0x%016X%*c %[^\t\n;]", &linear_addr, sym.name);
+    int ret = sscanf(dupLine, " 0x%016llX%*c %[^\t\n;]", &linear_addr, sym.name);
 #else
     int ret = sscanf(dupLine, " 0x%08X%*c %[^\t\n;]", &linear_addr, sym.name);
 #endif
