@@ -84,7 +84,7 @@ void linearAddressToSymbolAddr(MapFile::MAPSymbol &sym, ea_t linear_addr)
     if (sseg != NULL)
         sym.addr = linear_addr - sseg->start_ea;
     else
-        sym.addr = -1;
+        sym.addr = BADADDR;
 }
 
 
@@ -246,8 +246,8 @@ bool idaapi run(size_t)
         const char * pLine = pMapStart;
         const char * pEOL = pMapStart;
         MapFile::MAPSymbol sym;
-        MapFile::MAPSymbol prvsym;
         sym.seg = SREG_NUM;
+        sym.linearAddr = BADADDR;
         sym.addr = BADADDR;
         sym.name[0] = '\0';
         while (pLine < pMapEnd)
@@ -289,10 +289,8 @@ bool idaapi run(size_t)
                 }
             }
             MapFile::ParseResult parsed;
-            prvsym.seg = sym.seg;
-            prvsym.addr = sym.addr;
-            qstrncpy(prvsym.name,sym.name,sizeof(sym.name));
             sym.seg = SREG_NUM;
+            sym.linearAddr = BADADDR;
             sym.addr = BADADDR;
             sym.name[0] = '\0';
             parsed = MapFile::INVALID_LINE;
@@ -342,7 +340,7 @@ bool idaapi run(size_t)
             {
                 qsnprintf(fmt, sizeof(fmt), "Comment line: %%.%ds.\n", lineLen);
                 showMsg(fmt, pLine);
-                if (BADADDR == sym.addr)
+                if (BADADDR == sym.linearAddr)
                     continue;
             }
             // Determine the DeDe map file
@@ -366,7 +364,13 @@ bool idaapi run(size_t)
                 bNameApply = false;
             }
 
-            ea_t la = sym.addr + getnseg((int) sym.seg)->start_ea;
+            ea_t la = sym.addr;
+            if (la == BADADDR)
+            {
+                segment_t *pSegment = getnseg((int) sym.seg);
+                ea_t segmentStart = pSegment->start_ea;
+                la = segmentStart + sym.linearAddr;
+            }
             flags_t f = get_full_flags(la);
 
             if (bNameApply) // Apply symbols for name

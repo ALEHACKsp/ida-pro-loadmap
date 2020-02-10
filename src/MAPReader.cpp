@@ -268,20 +268,21 @@ MapFile::ParseResult MapFile::parseMsSymbolLine(MapFile::MAPSymbol &sym, const c
         std::free(dupLine);
         return MapFile::COMMENT_LINE;
     }
-    sym.addr = -1;
+    sym.linearAddr = BADADDR;
+    sym.addr = BADADDR;
 #ifdef __EA64__
-    int ret = sscanf(dupLine, " %04X : %016llX %[^\t\n ;]", (unsigned long*)&sym.seg, &sym.addr, sym.name);
+    int ret = sscanf(dupLine, " %04X : %016llX %s %016llX [^\t\n ;]", (unsigned long*)&sym.seg, &sym.linearAddr, sym.name, &sym.addr);
 #else
-    int ret = sscanf(dupLine, " %04X : %08X %[^\t\n ;]", &sym.seg, &sym.addr, sym.name);
+    int ret = sscanf(dupLine, " %04X : %08X %s %08X [^\t\n ;]", &sym.seg, &sym.linearAddr, sym.name, &sym.addr);
 #endif
     std::free(dupLine);
-    if (3 != ret)
+    if (4 != ret)
     {
         // we have parsed to end of value/name symbols table or reached EOF
         return MapFile::FINISHING_LINE;
     }
-    else if ((0 == sym.seg) || (--sym.seg >= numOfSegs) ||
-            (-1 == sym.addr) || (std::strlen(sym.name) == 0) )
+    if ((0 == sym.seg) || (--sym.seg > numOfSegs) ||
+        ((ea_t)-1 == sym.linearAddr) || (std::strlen(sym.name) == 0))
     {
         return MapFile::INVALID_LINE;
     }
@@ -331,9 +332,9 @@ MapFile::ParseResult MapFile::parseWatcomSymbolLine(MapFile::MAPSymbol &sym, con
         return MapFile::COMMENT_LINE;
     }
 #ifdef __EA64__
-    int ret = sscanf(dupLine, " %04X : %016llX%*c %[^\t\n;]", &sym.seg, &sym.addr, sym.name);
+    int ret = sscanf(dupLine, " %04X : %016llX%*c %[^\t\n;]", &sym.seg, &sym.linearAddr, sym.name);
 #else
-    int ret = sscanf(dupLine, " %04X : %08X%*c %[^\t\n;]", &sym.seg, &sym.addr, sym.name);
+    int ret = sscanf(dupLine, " %04X : %08X%*c %[^\t\n;]", &sym.seg, &sym.linearAddr, sym.name);
 #endif
     std::free(dupLine);
     if (3 != ret)
@@ -342,7 +343,7 @@ MapFile::ParseResult MapFile::parseWatcomSymbolLine(MapFile::MAPSymbol &sym, con
         return MapFile::FINISHING_LINE;
     }
     else if ((0 == sym.seg) || (--sym.seg >= numOfSegs) ||
-            (-1 == sym.addr) || (std::strlen(sym.name) == 0) )
+            (-1 == sym.linearAddr) || (std::strlen(sym.name) == 0) )
     {
         return MapFile::INVALID_LINE;
     }
@@ -411,7 +412,7 @@ MapFile::ParseResult MapFile::parseGccSymbolLine(MapFile::MAPSymbol &sym, const 
         return MapFile::FINISHING_LINE;
     }
     linearAddressToSymbolAddr(sym, linear_addr);
-    if ((sym.seg >= numOfSegs) || (-1 == sym.addr) || (std::strlen(sym.name) == 0) )
+    if ((sym.seg >= numOfSegs) || ((ea_t)-1 == sym.linearAddr) || (std::strlen(sym.name) == 0) )
     {
         return MapFile::INVALID_LINE;
     }

@@ -50,6 +50,7 @@ typedef enum {
 
 typedef struct {
     ea_t seg;
+    ea_t linearAddr;
     ea_t addr;
     char name[MAXNAMELEN + 1];
 } MAPSymbol;
